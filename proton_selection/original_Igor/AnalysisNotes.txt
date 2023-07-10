@@ -1,0 +1,123 @@
+ 
+root -l 'mod1display.C("packet_2022_02_11_07_20_22_CETevd.root","rwf_0cd913fb_20220211_072022.data.root","event_nhits>50 && event_nhits<5000","contained","")' 
+ 
+ 
+ {{for(int ei=0; ei<cds_elist->GetN(); ei++) display_event(ei);}}
+ 
+ selects contained events
+ adds cds_Evtr_out->Branch("event_photons",&event_photons,"event_photons/F");
+ calculates total photons per event
+ 
+creates "contained_packet_2022_02_11_07_20_22_CETevd.root" 
+ 
+ 
+root -l 'mod1display_local.C("packet_2022_02_11_05_00_12_CETevd.root","rwf_0cd93db0_20220211_050032.data.root","event_nhits>50 && event_nhits<5000","contained","")'
+
+if MIP_HIP_SELECTOR==0 selects HIPS and 
+       adds prefix HIPs_ to cds name
+if MIP_HIP_SELECTOR==1 selects MIPS and 
+       adds prefix MIPs_ to cds name
+ 
+adds:
+cds_Trtr_out->Branch("event_photons",&event_photons,"event_photons/F"); //copy for track selections
+   cds_Trtr_out->Branch("eventID",&event_ID,"event_ID/I");
+   cds_Trtr_out->Branch("event_ntracks",&event_ntracks,"event_ntracks/I");
+   cds_Trtr_out->Branch("event_nhits",&event_nhits,"event_nhits/I");
+   cds_Trtr_out->Branch("event_q",&event_q,"event_q/F");
+
+copies event_photons from cds_Evtr to cds_Trtr_out, no self calculations
+ 
+  
+ root -l 'mod1display_justdisplay.C("MIPs_contained_packet_2022_02_11_07_00_20_CETevd.root","rwf_0cd9415c_20220211_070020.data.root","event_nhits>50 && event_nhits<5000","1","1")'
+ Performs Hough track reconstruction, vertex finding (the latter does not work yet)
+ Adds:  
+cds_EvHough=new TTree();
+cds_TrHough=new TTree();
+cds_Vtx=new TTree();
+ cds_EvHough->Write("Hevents",TObject::kOverwrite);  
+ cds_TrHough->Write("Htracks",TObject::kOverwrite);  
+ cds_Vtx->Write("Vtx",TObject::kOverwrite);  
+
+ adds HoughReco_ prefix to output file
+ 
+ 
+ 
+ root -l 'pida.C("HoughReco_HIPs_contained_10runs.root")' 
+ root -l 'pida.C("HoughReco_MIPs_contained_packet_2022_02_11_07_00_20_CETevd.root")'
+ 
+ Calculates different PIDA metrics
+ 
+ Adds:
+ cds_TrHough_out->Branch("pida_A", &pida_A,"pida_A/F");
+cds_TrHough_out->Branch("pida_B", &pida_B,"pida_B/F");
+cds_TrHough_out->Branch("pida_C", &pida_C,"pida_C/F");
+cds_TrHough_out->Branch("vpida_A", &vpida_A,"vpida_A/F");
+cds_TrHough_out->Branch("vpida_B", &vpida_B,"vpida_B/F");
+cds_TrHough_out->Branch("vpida_C", &vpida_C,"vpida_C/F");
+
+
+
+Convert void files from Jonas to root:
+awk '{print $0, "-1"}' voidsquares_packet_2022_02_09_02_17_27_CETevd_negative_z_test1.txt >>voidsquares_packet_2022_02_09_02_17_27_CETevd.txt
+awk '{print $0, "1"}' voidsquares_packet_2022_02_09_02_17_27_CETevd_positive_z_test1.txt >>voidsquares_packet_2022_02_09_02_17_27_CETevd.txt
+root -l 'ConvToRoot.C("voidsquares_packet_2022_02_09_02_17_27_CETevd.txt")'
+
+Check track-void relations:
+root -l 'MatchVoids.C("PIDA_HoughReco_HIPs_contained_10runs.root","voidsquares_packet_2022_02_09_02_17_27_CETevd.root")'
+plot safe tracks:
+Htracks->Draw("tr_vox_y:tr_vox_x:tr_vox_z","endnearvoid==0&&nhtracks==1&&trackID==0","")
+ 
+ 
+ 
+ ***************************************** NEW FORMAT ****************************************************************************************************
+ 
+ 
+ 
+ root -l 'mod1display_newformat.C("packet_2022_02_11_07_20_22_CETevd.root","rwf_0cd913fb_20220211_072022.data.root","event_nhits>50 && event_nhits<5000","contained","")' 
+ 
+ 
+ {{for(int ei=0; ei<cds_elist->GetN(); ei++) display_event(ei);}}
+ 
+ selects contained events (if cut "contained" is given as argument)
+ combine tracks and hits into event structure with 2D arrays for hits [track][hit] - this is NEW FORMAT!
+ calculates integrals on all SiPMs and saves 2D histograms of event display (one for negative x and one for positive X)
+ For ArCLights the integral is multiplied by 4 !!!!!
+ 
+creates "newformat_contained_packet_2022_02_11_07_20_22_CETevd.root" 
+
+ 
+ 
+root -l 'selectHMIPS_newformat.C("newformat_contained_packet_2022_02_11_07_20_22_CETevd.root","event_nhits>50 && event_nhits<5000",0,1)'
+
+Adds nothing, just selects MIPs or HIPs ...........,selMIP,selHIP)'
+
+
+ root -l 'RecoHough_newformat.C("HIPs_newformat_contained_packet_2022_02_11_05_00_12_CETevd.root")
+ Perform hough transform and track reco
+  adds HoughReco_ prefix to output file
+  Adds htracks branch with track parameters
+  Limitation: max 10000 hits per track, rest is discarded.
+ 
+ Hevents->Draw("htracks_qhts/htracks_tl:htracks_rhits","nhtracks==1&&htracks_ID==0&&abs(htracks_rhits-7)<2&&abs(htracks_qhts/htracks_tl)<150&&abs(htracks_qhts/htracks_tl-80)<30&&event_photons*(1+abs(htracks_ay)/1000)*(1-abs(htracks_ax)/1600)>5000","*")
+
+
+
+ root -l 'pida_newformat.C("HoughReco_HIPs_newformat_contained_10runs.root")' 
+ root -l 'pida_newformat.C("HoughReco_MIPs_newformat_contained_packet_2022_02_11_07_00_20_CETevd.root")'
+ 
+ Calculates different PIDA metrics
+ 
+ Adds:
+cds_EvHough_out->Branch("pida_A", pida_A,"pida_A[10]/F");
+cds_EvHough_out->Branch("pida_B", pida_B,"pida_B[10]/F");
+cds_EvHough_out->Branch("pida_C", pida_C,"pida_C[10]/F");
+cds_EvHough_out->Branch("vpida_A", vpida_A,"vpida_A[10]/F");
+cds_EvHough_out->Branch("vpida_B", vpida_B,"vpida_B[10]/F");
+cds_EvHough_out->Branch("vpida_C", vpida_C,"vpida_C[10]/F");
+
+
+
+
+ Check track-void relations:
+root -l 'MatchVoids.C("PIDA_HoughReco_HIPs_newformat_contained_10runs.root","voidsquares_packet_2022_02_09_02_17_27_CETevd.root")'
+
