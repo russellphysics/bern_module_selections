@@ -12,3 +12,6 @@ Michel electron
 Stopping muon
 
 Neutrino-like high-multiplicity events
+
+
+To convert LRS files to rwf***.root use AFIViewer (see https://git.jinr.ru/greenlab/AFIViewer)
