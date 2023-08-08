@@ -9,7 +9,7 @@ import h5py, glob, argparse
 import numpy as np
 import sys
 import charge_threshold_cut as ct_cut
-sys.path.append('../../common')
+sys.path.append('../../../common')
 import file_parsing
 
 def main(data_file):
