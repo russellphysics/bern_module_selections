@@ -1,0 +1,52 @@
+################################################################################
+##                                                                            ##
+##    CONTAINS: Configurations to run proton selection. Based on              ##
+##              https://github.com/DUNE/ndlar_flow/blob/main/yamls/           ##
+##              module0_flow/workflows/analysis/stopping_muons.yaml.          ##
+##                                                                            ##
+################################################################################
+
+flow:
+  source: events
+  stages: [proton_sel]
+
+#resources:
+  #!include yamls/module0_flow/resources/RunData.yaml
+  #- !include yamls/module0_flow/resources/LArData.yaml
+  #- !include yamls/module0_flow/resources/Geometry.yaml
+  #- !include yamls/module0_flow/resources/ParticleData.yaml
+  #- !include yamls/module0_flow/resources/DisabledChannels.yaml
+
+events:
+  classname: H5FlowDatasetLoopGenerator
+  path: h5flow.modules
+  dset_name: 'charge/events'
+  params:
+    chunk_size: 32
+
+proton_sel:
+  classname: ProtonSelection # proton_selection.py
+  path: proton_selection
+  requires:
+    - 'combined/tracklets'
+    - 'combined/t0'
+    - 'charge/hits'
+  params:
+    # inputs
+    hits_dset_name: 'charge/hits'
+    ext_trigs_dset_name: 'charge/ext_trigs'
+    t0_dset_name: 'combined/t0'
+    tracklet_dset_name: 'combined/tracklets'
+
+    # configuration parameters
+    fid_cut: 22 # mm
+    cathode_fid_cut: 22 # mm
+    profile_dx: 22 # mm
+    larpix_gain:
+      mc: 250 # e/mV
+      medm: 221 # e/mV
+      high: 221 # e/mV
+    curvature_rr_correction:
+      mc: 1.0
+      medm: 1.0
+      high: 1.0
