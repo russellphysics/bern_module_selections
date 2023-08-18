@@ -10,12 +10,12 @@ flow:
   source: events
   stages: [proton_sel]
 
-#resources:
-  #!include yamls/module0_flow/resources/RunData.yaml
-  #- !include yamls/module0_flow/resources/LArData.yaml
-  #- !include yamls/module0_flow/resources/Geometry.yaml
-  #- !include yamls/module0_flow/resources/ParticleData.yaml
-  #- !include yamls/module0_flow/resources/DisabledChannels.yaml
+resources:
+  - !include ../../../ndlar_flow/yamls/module0_flow/resources/RunData.yaml
+  - !include ../../../ndlar_flow/yamls/module0_flow/resources/LArData.yaml
+  - !include ../../../ndlar_flow/yamls/module0_flow/resources/Geometry.yaml
+  #- !include ../../../ndlar_flow/yamls/module0_flow/resources/ParticleData.yaml
+  #- !include ../../../ndlar_flow/yamls/module0_flow/resources/DisabledChannels.yaml
 
 events:
   classname: H5FlowDatasetLoopGenerator

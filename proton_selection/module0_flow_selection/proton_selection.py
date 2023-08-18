@@ -18,9 +18,10 @@ import scipy.ndimage as ndimage
 import scipy.optimize as optimize
 from copy import deepcopy
 
-from h5flow.core import H5FlowStage
-# don't have access to h5flow.core resources because they are now part of ndlar_flow/module0_flow vs. higher level h5flow
+# Need to have both h5flow and ndlar-flow installed
+from h5flow.core import H5FlowStage, resources
 from h5flow.data import dereference_chain
+
 
 import sys
 sys.path.append("../../common")
@@ -29,7 +30,7 @@ import units
 
 class ProtonSelection(H5FlowStage):
 
-    class_version = '0.0.0'
+    class_version = '2.0.0' # change for getting around assertion error in geometry files
 
     default_params = dict(
         fid_cut=20, # mm
@@ -193,6 +194,23 @@ class ProtonSelection(H5FlowStage):
 
         if events.shape[0]:
 
+            # find value for the most charge in one hit in each event
+            max_hit_charge = np.array([np.max(hits['q'][i]) for i in range(len(hits))])
+
+
+            # find all tracks that end in the fiducial volume
+            track_start = tracks.ravel()['trajectory'][..., 0, :]
+            #track_stop = tracks.ravel()['trajectory'][..., -1, :]
+
+
+            start_in_fid = resources['Geometry'].in_fid(
+                track_start, field_cage_fid=self.fid_cut, anode_fid=self.anode_fid_cut)
+            start_in_fid = start_in_fid.reshape(tracks.shape)
+            #print("Shape of start_in_fid:", start_in_fid.shape)
+            #print("Start in fid:", start_in_fid)
+            event_ntracks_start_in_fid = np.zeros(len(tracks), dtype=int)
+            #print("Start in FID masked tracks:", np.array([int(start_in_fid[i].sum()) for i in range(len(tracks))]))
+
             # prep arrays to write to file
             event_ids = events['id']
             event_next_trigs = events['n_ext_trigs']
@@ -203,15 +221,18 @@ class ProtonSelection(H5FlowStage):
             event_ntracks = np.array([int((~tracks['id'][i].mask).sum()) for i in range(len(tracks))])
             event_nhits = events['nhit']
             event_charge = events['q']
+            for i in range(len(tracks)):
+                if event_ntracks[i] > 0: 
+                    event_ntracks_start_in_fid[i] = int(start_in_fid[i].sum())
+                else:
+                    event_ntracks_start_in_fid[i] = 0
 
-            #print("Hits Shape:", hits.shape)
 
-            max_hit_charge = np.array([np.max(hits['q'][i]) for i in range(len(hits))])
-
-            nhits_cut = (event_nhits > 50) & (event_nhits < 5000)
+            nhits_cut = (event_nhits > 50) & (event_nhits < 5000) 
             hit_charge_threshold_cut = (max_hit_charge > 300) 
             external_trigger_cut = (event_next_trigs > 0)
-            event_sel = nhits_cut & hit_charge_threshold_cut & external_trigger_cut
+            track_start_in_fid_cut = (event_ntracks_start_in_fid > 0)
+            event_sel = nhits_cut & hit_charge_threshold_cut & external_trigger_cut & track_start_in_fid_cut
 
             #track_nhits = tracks.ravel()['nhit'][~tracks['nhit'].mask]
             #track_length = tracks.ravel()['length'][~tracks['length'].mask]
